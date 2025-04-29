@@ -1,0 +1,74 @@
+# ----------------------------------------------------------------------
+#  Global ignores for a Streamlit + Geopandas election-sim project
+# ----------------------------------------------------------------------
+
+# --- Python -----------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.so
+*.pyd
+
+# --- Virtual-envs ------------------------------------------------------
+.venv/
+venv/
+env/
+
+# Poetry / Pipenv lock files (keep if you use them)
+# poetry.lock
+# Pipfile.lock
+
+# --- Build / dist ------------------------------------------------------
+build/
+dist/
+*.egg-info/
+
+# --- IDE / editor ------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~            # backup files
+
+# --- Logs & profiling --------------------------------------------------
+*.log
+logs/
+.prof
+.coverage
+coverage.*
+
+# --- Test & lint caches -----------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+.cache/
+ruff_cache/
+
+# --- Streamlit secrets -------------------------------------------------
+.streamlit/secrets.toml
+
+# --- Geospatial data ---------------------------------------------------
+# (Shapefile bundles are >5× files each; keep only the small CSV colours)
+data/**/*.shp
+data/**/*.shx
+data/**/*.dbf
+data/**/*.prj
+data/**/*.cpg
+data/**/*.qix
+data/**/*.shp.xml
+
+# --- Big CSVs or binaries you don’t want in Git ------------------------
+data/**/*.csv
+data/**/*.parquet
+data/**/*.feather
+data/**/*.geojson
+data/**/*.json
+
+# --- OS cruft ----------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------------------------------------------------------
+#  Optional: uncomment below if you want *everything* in /data ignored
+#  but keep a placeholder so the folder exists in fresh clones.
+# ----------------------------------------------------------------------
+# data/*
+# !data/.gitkeep

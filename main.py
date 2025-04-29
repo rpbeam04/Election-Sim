@@ -56,7 +56,7 @@ BQ_SUPPRESS_ROC = 0.2
 IND_RESIDUAL_CAP = 0.15
 
 # map / UI behaviour
-SIMPLIFY_TOLERANCE = 0.009
+SIMPLIFY_TOLERANCE = 0.005
 BATCH              = 5         # ridings per animation frame
 FRAME_DELAY        = 0.04      # seconds between frames
 MAP_HEIGHT_PX      = 450
@@ -108,7 +108,7 @@ def load_data():
     gdf["LEAN"] = gdf["PRCODE"].map(PROV_LEAN) + size_mod
     gdf["LEAN"] -= gdf["LEAN"].mean()
 
-    # geometry simplification (no inward buffer)
+    # # geometry simplification (no inward buffer)
     gdf["geometry"] = gdf.geometry.simplify(
         SIMPLIFY_TOLERANCE, preserve_topology=True
     )

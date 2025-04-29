@@ -125,18 +125,15 @@ RIDINGS, COLOURS = load_data()
 PARTIES          = list(DEFAULT_GLOBAL.keys())
 N_RIDINGS        = len(RIDINGS)
 
-# ──────────────────────────────── SIDEBAR ──────────────────────────────────
-# Locks ■ Sliders ■ Number-inputs ■ Normalise-button (no duplicate IDs)
-# ----------------------------------------------------------------------------
-
+# ─────────────────────────────── SIDEBAR ────────────────────────────────
 st.sidebar.header("Global party probabilities")
 
-# ---------- key helpers (must RETURN!) --------------------------------------
-def s_key(p): return f"slider_{p}"      # slider
-def n_key(p): return f"num_{p}"         # number-input
-def l_key(p): return f"lock_{p}"        # lock checkbox
+# -- helper functions return unique keys ---------------------------------
+def s_key(p): return f"s_{p}"
+def n_key(p): return f"n_{p}"
+def l_key(p): return f"l_{p}"
 
-# ---------- 1️⃣  Normalise on the *first* line of the rerun -----------------
+# 1️⃣  Normalise (happens BEFORE widgets are built)
 if st.session_state.get("⚖️_normalize_now", False):
     locked_sum = sum(
         st.session_state.get(s_key(p), DEFAULT_GLOBAL[p])
@@ -147,69 +144,72 @@ if st.session_state.get("⚖️_normalize_now", False):
         unlocked = [p for p in PARTIES if not st.session_state.get(l_key(p), False)]
         unlocked_sum = sum(st.session_state.get(s_key(p), DEFAULT_GLOBAL[p]) for p in unlocked)
         if unlocked_sum:
-            scale = (1.0 - locked_sum) / unlocked_sum
+            scale = (1 - locked_sum) / unlocked_sum
             for p in unlocked:
                 new_val = st.session_state.get(s_key(p), DEFAULT_GLOBAL[p]) * scale
                 st.session_state[s_key(p)] = new_val
                 st.session_state[n_key(p)] = new_val
-    st.session_state["⚖️_normalize_now"] = False  # clear flag
+    st.session_state["⚖️_normalize_now"] = False
 
-# ---------- 2️⃣  Ensure every key is initialised once -----------------------
+# 2️⃣  Seed keys once
 for p in PARTIES:
     st.session_state.setdefault(s_key(p), DEFAULT_GLOBAL[p])
     st.session_state.setdefault(n_key(p), DEFAULT_GLOBAL[p])
     st.session_state.setdefault(l_key(p), False)
 
-# ---------- 3️⃣  Build widgets (unique keys, no value= duplication) ---------
+# 3️⃣  Build widgets
 for p in PARTIES:
 
-    # keep the two widgets in sync
-    def slider_sync(part=p):
+    def sync_from_slider(part=p):
         st.session_state[n_key(part)] = st.session_state[s_key(part)]
 
-    def number_sync(part=p):
+    def sync_from_number(part=p):
         st.session_state[s_key(part)] = st.session_state[n_key(part)]
 
     lock_col, slide_col, num_col = st.sidebar.columns([1, 4, 2], gap="small")
 
-    # 🔒 checkbox
+    # 🔒 checkbox  (unique label per party, hidden)
     with lock_col:
-        st.checkbox("Lock", key=l_key(p))
+        st.checkbox(
+            label=f"lock_{p}",             # non-empty, unique
+            key=l_key(p),
+            label_visibility="collapsed",
+        )
 
-    # slider
+    # slider  (Streamlit shows its label by default)
     with slide_col:
         st.slider(
-            label=p, min_value=0.0, max_value=1.0, step=0.001,
-            key=s_key(p), on_change=slider_sync
+            label=p,
+            min_value=0.0, max_value=1.0, step=0.001,
+            key=s_key(p),
+            on_change=sync_from_slider,
         )
 
-    # precise number-input (hidden label)
+    # number-input  (unique dummy label, hidden)
     with num_col:
         st.number_input(
-            "prob",                  # ← non-empty dummy label
-            0.0, 1.0,
-            step=0.001,
-            format="%.3f",
+            label=f"num_{p}",              # non-empty, unique
+            min_value=0.0, max_value=1.0,
+            step=0.001, format="%.3f",
             key=n_key(p),
-            on_change=number_sync,
-            label_visibility="collapsed",  # ← hides it, satisfies accessibility
+            on_change=sync_from_number,
+            label_visibility="collapsed",
         )
 
-# ---------- 4️⃣  Normalise-unlocked button (sets flag then reruns) ----------
+# 4️⃣  Normalise button (sets flag, next run will rescale)
 st.sidebar.button(
     "Normalize unlocked to 1.00",
     on_click=lambda: st.session_state.update({"⚖️_normalize_now": True})
 )
 
-# ---------- 5️⃣  Collect final probability dict and validate ---------------
+# 5️⃣  Collect final probabilities
 global_probs = {p: st.session_state[s_key(p)] for p in PARTIES}
 
-if abs(sum(global_probs.values()) - 1.0) > 1e-6:
+if abs(sum(global_probs.values()) - 1) > 1e-6:
     st.sidebar.warning("Total ≠ 1.00 (press normalize or adjust sliders).")
 
 run_btn = st.sidebar.button("Run election night simulation", type="primary")
-
-# ────────────────────────────── END SIDEBAR ────────────────────────────────
+# ───────────────────────────── END SIDEBAR ──────────────────────────────
 
 # -------------------------------------------------------------------------
 #  UI LAYOUT

@@ -126,16 +126,68 @@ PARTIES          = list(DEFAULT_GLOBAL.keys())
 N_RIDINGS        = len(RIDINGS)
 
 # -------------------------------------------------------------------------
-# SIDEBAR – sliders, locks, and deferred normalisation
+# SIDEBAR – sliders + number-inputs + locks + normalise button
 # -------------------------------------------------------------------------
+
 st.sidebar.header("Global party probabilities")
 
-def s_key(p): return f"prob_{p}"
-def l_key(p): return f"lock_{p}"
+def s_key(p):  # slider key
+    return f"slider_{p}"
+def n_key(p):  # number-input key
+    return f"num_{p}"
+def l_key(p):  # lock key
+    return f"lock_{p}"
 
-# ----------------------------------------------------------------- #
-# 1️⃣  If a normalisation was requested in the previous run, apply it
-# ----------------------------------------------------------------- #
+# --- 1️⃣  Build widgets ---------------------------------------------------
+for party in PARTIES:
+
+    # ---- callbacks keep the two widgets in sync -------------------------
+    def slider_changed(p=party):
+        st.session_state[n_key(p)] = st.session_state[s_key(p)]
+
+    def number_changed(p=party):
+        st.session_state[s_key(p)] = st.session_state[n_key(p)]
+
+    lock_col, slide_col, num_col = st.sidebar.columns([1, 4, 2], gap="small")
+
+    # 🔒 checkbox
+    with lock_col:
+        st.checkbox("🔒", key=l_key(party),
+                    value=st.session_state.get(l_key(party), False))
+
+    # slider (you can also type in its own field)
+    with slide_col:
+        st.slider(
+            party,
+            0.0,
+            1.0,
+            value=st.session_state.get(s_key(party), DEFAULT_GLOBAL[party]),
+            step=0.001,
+            key=s_key(party),
+            on_change=slider_changed,
+        )
+
+    # extra number-input for precise typing
+    with num_col:
+        st.number_input(
+            "",
+            0.0,
+            1.0,
+            value=st.session_state.get(n_key(party), DEFAULT_GLOBAL[party]),
+            step=0.001,
+            format="%.3f",
+            key=n_key(party),
+            on_change=number_changed,
+        )
+
+# --- 2️⃣  Normalise button (deferred via flag) ----------------------------
+def request_normalise():
+    st.session_state["⚖️_normalize_now"] = True
+    # no experimental_rerun() needed; button triggers rerun automatically
+
+st.sidebar.button("Normalize unlocked to 1.00", on_click=request_normalise)
+
+# --- 3️⃣  Apply normalisation at the start of each rerun ------------------
 if st.session_state.get("⚖️_normalize_now", False):
     locked_sum = sum(
         st.session_state[s_key(p)]
@@ -145,45 +197,18 @@ if st.session_state.get("⚖️_normalize_now", False):
     if locked_sum <= 1.0:
         unlocked = [p for p in PARTIES if not st.session_state[l_key(p)]]
         unlocked_sum = sum(st.session_state[s_key(p)] for p in unlocked)
-        if unlocked_sum:                       # avoid division by zero
+        if unlocked_sum:
             scale = (1.0 - locked_sum) / unlocked_sum
             for p in unlocked:
                 st.session_state[s_key(p)] *= scale
-    # clear the flag so we don’t loop forever
+                st.session_state[n_key(p)] *= scale
     st.session_state["⚖️_normalize_now"] = False
 
-# ----------------------------------------------------------------- #
-# 2️⃣  Build lock + slider widgets (values may have just been updated)
-# ----------------------------------------------------------------- #
-for p in PARTIES:
-    lock_col, slide_col = st.sidebar.columns([1, 5])
-    with lock_col:
-        st.checkbox("🔒", key=l_key(p), value=st.session_state.get(l_key(p), False))
-    with slide_col:
-        st.slider(
-            p,
-            0.0,
-            1.0,
-            value=st.session_state.get(s_key(p), DEFAULT_GLOBAL[p]),
-            step=0.001,
-            key=s_key(p),
-        )
-
-# ----------------------------------------------------------------- #
-# 3️⃣  Button → set flag → rerun  (normalisation happens next run)
-# ----------------------------------------------------------------- #
-def request_normalise():
-    st.session_state["⚖️_normalize_now"] = True
-
-st.sidebar.button("Normalize unlocked to 1.00", on_click=request_normalise)
-
-# ----------------------------------------------------------------- #
-# 4️⃣  Gather probabilities & enforce sum=1.00
-# ----------------------------------------------------------------- #
+# --- 4️⃣  Collect final probability dict ----------------------------------
 global_probs = {p: st.session_state[s_key(p)] for p in PARTIES}
 
 if abs(sum(global_probs.values()) - 1.0) > 1e-6:
-    st.sidebar.warning("Total ≠ 1.00 (press normalise or adjust sliders).")
+    st.sidebar.warning("Total ≠ 1.00 (press normalize or adjust sliders).")
 
 run_btn = st.sidebar.button("Run election night simulation", type="primary")
 

@@ -46,17 +46,8 @@ ruff_cache/
 .streamlit/secrets.toml
 
 # --- Geospatial data ---------------------------------------------------
-# (Shapefile bundles are >5× files each; keep only the small CSV colours)
-data/**/*.shp
-data/**/*.shx
-data/**/*.dbf
-data/**/*.prj
-data/**/*.cpg
-data/**/*.qix
-data/**/*.shp.xml
 
 # --- Big CSVs or binaries you don’t want in Git ------------------------
-data/**/*.csv
 data/**/*.parquet
 data/**/*.feather
 data/**/*.geojson

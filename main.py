@@ -56,7 +56,7 @@ BQ_SUPPRESS_ROC = 0.2
 IND_RESIDUAL_CAP = 0.15
 
 # map / UI behaviour
-SIMPLIFY_TOLERANCE = 0.02
+SIMPLIFY_TOLERANCE = 0.009
 BATCH              = 5         # ridings per animation frame
 FRAME_DELAY        = 0.04      # seconds between frames
 MAP_HEIGHT_PX      = 450
@@ -202,6 +202,14 @@ st.sidebar.button(
     on_click=lambda: st.session_state.update({"⚖️_normalize_now": True})
 )
 
+# ── Reveal speed slider (10 ms – 250 ms) ────────────────────────────────
+reveal_ms = st.sidebar.slider(
+    "Reveal speed (milliseconds per update)",
+    min_value=10, max_value=250, step=10, value=40,
+    help="Lower = faster animation. Applies next time you press Run.",
+)
+reveal_delay = reveal_ms / 1000.0  # seconds
+
 # 5️⃣  Collect final probabilities
 global_probs = {p: st.session_state[s_key(p)] for p in PARTIES}
 
@@ -273,4 +281,4 @@ if run_btn:
             table_ph.dataframe(seat_df, height=MAP_HEIGHT_PX,
                                use_container_width=True)
 
-            time.sleep(FRAME_DELAY)
+            time.sleep(reveal_delay)

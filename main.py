@@ -174,7 +174,7 @@ for p in PARTIES:
 
     # 🔒 checkbox
     with lock_col:
-        st.checkbox("🔒", key=l_key(p))
+        st.checkbox("Lock", key=l_key(p))
 
     # slider
     with slide_col:
@@ -186,9 +186,13 @@ for p in PARTIES:
     # precise number-input (hidden label)
     with num_col:
         st.number_input(
-            "prob", 0.0, 1.0, step=0.001, format="%.3f",
-            key=n_key(p), on_change=number_sync,
-            label_visibility="collapsed",
+            "prob",                  # ← non-empty dummy label
+            0.0, 1.0,
+            step=0.001,
+            format="%.3f",
+            key=n_key(p),
+            on_change=number_sync,
+            label_visibility="collapsed",  # ← hides it, satisfies accessibility
         )
 
 # ---------- 4️⃣  Normalise-unlocked button (sets flag then reruns) ----------

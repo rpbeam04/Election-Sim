@@ -126,59 +126,53 @@ PARTIES          = list(DEFAULT_GLOBAL.keys())
 N_RIDINGS        = len(RIDINGS)
 
 # -------------------------------------------------------------------------
-# SIDEBAR – sliders + number-inputs + locks + normalise button
+# SIDEBAR – sliders + number-inputs + locks (without duplicate value=)
 # -------------------------------------------------------------------------
 
 st.sidebar.header("Global party probabilities")
 
-def s_key(p):  # slider key
-    return f"slider_{p}"
-def n_key(p):  # number-input key
-    return f"num_{p}"
-def l_key(p):  # lock key
-    return f"lock_{p}"
+def s_key(p): return f"slider_{p}"
+def n_key(p): return f"num_{p}"
+def l_key(p): return f"lock_{p}"
 
-# --- 1️⃣  Build widgets ---------------------------------------------------
-for party in PARTIES:
+# 1️⃣  Ensure every key exists exactly once
+for p in PARTIES:
+    st.session_state.setdefault(s_key(p), DEFAULT_GLOBAL[p])
+    st.session_state.setdefault(n_key(p), DEFAULT_GLOBAL[p])
+    st.session_state.setdefault(l_key(p), False)
 
-    # ---- callbacks keep the two widgets in sync -------------------------
-    def slider_changed(p=party):
-        st.session_state[n_key(p)] = st.session_state[s_key(p)]
+# 2️⃣  Build widgets (no value=, so no warning)
+for p in PARTIES:
 
-    def number_changed(p=party):
-        st.session_state[s_key(p)] = st.session_state[n_key(p)]
+    def slider_sync(part=p):
+        st.session_state[n_key(part)] = st.session_state[s_key(part)]
+
+    def number_sync(part=p):
+        st.session_state[s_key(part)] = st.session_state[n_key(part)]
 
     lock_col, slide_col, num_col = st.sidebar.columns([1, 4, 2], gap="small")
 
-    # 🔒 checkbox
     with lock_col:
-        st.checkbox("🔒", key=l_key(party),
-                    value=st.session_state.get(l_key(party), False))
+        st.checkbox("🔒", key=l_key(p))
 
-    # slider (you can also type in its own field)
     with slide_col:
         st.slider(
-            party,
-            0.0,
-            1.0,
-            value=st.session_state.get(s_key(party), DEFAULT_GLOBAL[party]),
-            step=0.001,
-            key=s_key(party),
-            on_change=slider_changed,
+            p, 0.0, 1.0, step=0.001,
+            key=s_key(p),
+            on_change=slider_sync,
         )
 
-    # extra number-input for precise typing
     with num_col:
         st.number_input(
-            "",
-            0.0,
-            1.0,
-            value=st.session_state.get(n_key(party), DEFAULT_GLOBAL[party]),
+            "prob",                    # dummy label
+            0.0, 1.0,
             step=0.001,
             format="%.3f",
-            key=n_key(party),
-            on_change=number_changed,
+            key=n_key(p),
+            on_change=number_sync,
+            label_visibility="collapsed",   # ← hides it in the UI
         )
+
 
 # --- 2️⃣  Normalise button (deferred via flag) ----------------------------
 def request_normalise():
